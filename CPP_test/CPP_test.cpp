@@ -73,7 +73,7 @@ public:
         TRY_(pWICFactory->CreateFormatConverter(&pWICConverter));
 
         TRY_(
-    pWICConverter->Initialize(
+        pWICConverter->Initialize(
             pWICFrameDecoder,
             GUID_WICPixelFormat32bppPBGRA,
             WICBitmapDitherTypeNone,
