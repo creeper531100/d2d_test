@@ -3,13 +3,6 @@
 #include <d2d1.h>
 #include <dwrite.h>
 
-#define SafeRelease(x)              \
-    if(x) {                         \
-        (x)->Release();             \
-        (x) = NULL;                 \
-    } else {                        \
-        MessageBoxA(0, 0, 0, 0);    \
-    }
 
 
 class CustomTextRenderer : public IDWriteTextRenderer {

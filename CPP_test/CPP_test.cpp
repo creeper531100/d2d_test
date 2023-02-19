@@ -3,37 +3,13 @@
 #include <wincodec.h>
 
 #include "CustomTextRenderer.h"
+#include "define.h"
 #include "Error.h"
 
-struct Param {
-    Param() {}
-
-    UINT width;
-    UINT height;
-    UINT max_width;
-    UINT max_height;
-
-    float font_size;
-    std::wstring text;
-    std::wstring font_family;
-
-    UINT pos_x;
-    UINT pos_y;
-
-    UINT blur_level;
-    UINT stroke_width;
-
-    std::wstring path;
-    std::wstring name;
-    GUID container_format;
-
-    D2D1::ColorF in_solid_color_brush = 0;
-    D2D1::ColorF out_solid_color_brush = 0;
-};
 
 class WICWrapper {
 private:
-    Param* param;
+    SaoFU::Param* param;
 
     ID2D1Factory** pD2DFactory;
     ID2D1RenderTarget** ppRenderTarget;
@@ -53,7 +29,7 @@ private:
 
 public:
 
-    WICWrapper(ID2D1Factory** pD2DFactory, ID2D1RenderTarget** pRenderTarget, Param *param)
+    WICWrapper(ID2D1Factory** pD2DFactory, ID2D1RenderTarget** pRenderTarget, SaoFU::Param *param)
     :
     pD2DFactory(pD2DFactory), ppRenderTarget(pRenderTarget), param(param) {
         D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, pD2DFactory);
@@ -96,8 +72,8 @@ public:
 
         TRY_(pWICFactory->CreateFormatConverter(&pWICConverter));
 
-        TRY_
-        (pWICConverter->Initialize(
+        TRY_(
+    pWICConverter->Initialize(
             pWICFrameDecoder,
             GUID_WICPixelFormat32bppPBGRA,
             WICBitmapDitherTypeNone,
@@ -158,7 +134,7 @@ public:
 };
 
 int draw() {
-    Param param;
+    SaoFU::Param param;
     param.max_width = -1;
     param.max_height = -1;
     param.font_size = 500;

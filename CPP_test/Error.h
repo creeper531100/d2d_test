@@ -7,7 +7,6 @@
 #define SAOFU_TRY_INIT() HRESULT _hr = S_OK
 #define TRY_(RES) if(FAILED(_hr = RES)) { throw SaoFU::Error(SAOFU_EXCEPTION(_hr)); }
 
-
 #include <string>
 typedef long HRESULT;
 

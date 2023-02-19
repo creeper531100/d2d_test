@@ -11,6 +11,7 @@
 #pragma comment(lib, "windowscodecs.lib")
 #pragma comment(lib, "dwrite.lib")
 #include "CustomTextRenderer.h"
+#include "define.h"
 
 HRESULT CustomTextRenderer::DrawGlyphRun(
     void* clientDrawingContext, FLOAT baselineOriginX, FLOAT baselineOriginY,

@@ -32,5 +32,8 @@
     <ClInclude Include="Error.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="define.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
