@@ -31,12 +31,12 @@ struct Param {
     D2D1::ColorF out_solid_color_brush = 0;
 };
 
-class Direct2DWrapper {
+class WICWrapper {
 private:
     Param* param;
 
     ID2D1Factory** pD2DFactory;
-    ID2D1RenderTarget** pRenderTarget;
+    ID2D1RenderTarget** ppRenderTarget;
 
     IWICImagingFactory* pWICFactory;
     IWICBitmapDecoder* pWICDecoder;
@@ -53,16 +53,23 @@ private:
 
 public:
 
+    WICWrapper(ID2D1Factory** pD2DFactory, ID2D1RenderTarget** pRenderTarget, Param *param)
+    :
+    pD2DFactory(pD2DFactory), ppRenderTarget(pRenderTarget), param(param) {
+        D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, pD2DFactory);
+    }
+
     void Release() {
-        SafeRelease(*ppBitmap);
         SafeRelease(pWICFactory);
         SafeRelease(pWICDecoder);
         SafeRelease(pWICFrameDecoder);
         SafeRelease(pWICConverter);
         SafeRelease(pWICBitmap);
-        SafeRelease(*pRenderTarget);
 
+        SafeRelease(*ppBitmap);
+        SafeRelease(*ppRenderTarget);
         SafeRelease(*pD2DFactory);
+
         SafeRelease(pStream);
         SafeRelease(pEncoder);
         SafeRelease(pFrameEncode);
@@ -70,34 +77,36 @@ public:
         CoUninitialize();
     }
 
-    Direct2DWrapper(ID2D1Factory** pD2DFactory, ID2D1RenderTarget** pRenderTarget, Param *param)
-    :
-    pD2DFactory(pD2DFactory), pRenderTarget(pRenderTarget), param(param) {
-        D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, pD2DFactory);
+    ~WICWrapper() {
+        Release();
     }
+
 
     void CreateImageDecoder(ID2D1Bitmap** ppBitmap) {
 
-        CoInitialize(nullptr);
+        TRY_(CoInitialize(nullptr));
 
-        CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pWICFactory));
+        TRY_
+        (CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pWICFactory)));
 
-        pWICFactory->CreateDecoderFromFilename(param->path.c_str(), NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &pWICDecoder);
+        TRY_
+        (pWICFactory->CreateDecoderFromFilename(param->path.c_str(), NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &pWICDecoder));
 
-        pWICDecoder->GetFrame(0, &pWICFrameDecoder);
+        TRY_(pWICDecoder->GetFrame(0, &pWICFrameDecoder));
 
-        pWICFactory->CreateFormatConverter(&pWICConverter);
+        TRY_(pWICFactory->CreateFormatConverter(&pWICConverter));
 
-        pWICConverter->Initialize(
+        TRY_
+        (pWICConverter->Initialize(
             pWICFrameDecoder,
             GUID_WICPixelFormat32bppPBGRA,
             WICBitmapDitherTypeNone,
             nullptr
             , 0.0,
             WICBitmapPaletteTypeCustom
-        );
+        ));
 
-        pWICConverter->GetSize(&param->width, &param->height);
+        TRY_(pWICConverter->GetSize(&param->width, &param->height));
 
         if (param->max_width == -1) {
             param->max_width = param->width;
@@ -107,44 +116,45 @@ public:
             param->max_height = param->height;
         }
 
-        pWICFactory->CreateBitmap(param->width, param->height, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, &pWICBitmap);
+        TRY_
+        (pWICFactory->CreateBitmap(param->width, param->height, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, &pWICBitmap));
+
+        TRY_(
         (*pD2DFactory)->CreateWicBitmapRenderTarget(//CreateWicBitmapRenderTarget
             pWICBitmap,
             D2D1::RenderTargetProperties(),
-            pRenderTarget
-        );
+            ppRenderTarget
+        ));
 
-        (*pRenderTarget)->CreateBitmapFromWicBitmap(
+        TRY_(
+        (*ppRenderTarget)->CreateBitmapFromWicBitmap(
             pWICConverter,
             NULL,
             ppBitmap
-        );
+        ));
 
         this->ppBitmap = ppBitmap;
     }
 
     void SaveImage() {
-        pWICFactory->CreateStream(&pStream);
-        pStream->InitializeFromFilename(param->name.c_str(), GENERIC_WRITE);
+        TRY_(pWICFactory->CreateStream(&pStream));
+        TRY_(pStream->InitializeFromFilename(param->name.c_str(), GENERIC_WRITE));
 
-        pWICFactory->CreateEncoder(param->container_format, nullptr, &pEncoder);
-        pEncoder->Initialize(pStream, WICBitmapEncoderNoCache);
+        TRY_(pWICFactory->CreateEncoder(param->container_format, nullptr, &pEncoder));
+        TRY_(pEncoder->Initialize(pStream, WICBitmapEncoderNoCache));
 
-        pEncoder->CreateNewFrame(&pFrameEncode, nullptr);
-        pFrameEncode->Initialize(nullptr);
+        TRY_(pEncoder->CreateNewFrame(&pFrameEncode, nullptr));
+        TRY_(pFrameEncode->Initialize(nullptr));
 
-        pFrameEncode->WriteSource(pWICBitmap, nullptr);
+        TRY_(pFrameEncode->WriteSource(pWICBitmap, nullptr));
 
-        pFrameEncode->Commit();
-        pEncoder->Commit();
+        TRY_(pFrameEncode->Commit());
+        TRY_(pEncoder->Commit());
 
         this->pEncoder = pEncoder;
         this->pFrameEncode = pFrameEncode;
     }
 
-    ~Direct2DWrapper() {
-        Release();
-    }
 };
 
 int draw() {
@@ -167,7 +177,7 @@ int draw() {
     ID2D1Factory* pD2DFactory = nullptr;
     ID2D1RenderTarget* pRenderTarget = nullptr;
 
-    Direct2DWrapper d2d(&pD2DFactory, &pRenderTarget, &param);
+    WICWrapper d2d(&pD2DFactory, &pRenderTarget, &param);
 
     ID2D1Bitmap* pBitmap = nullptr;
     d2d.CreateImageDecoder(&pBitmap);

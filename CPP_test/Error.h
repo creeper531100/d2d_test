@@ -5,7 +5,7 @@
 #define SAOFU_EXCEPTION(hr) SaoFU::Error(__LINE__, __FILE__, hr)
 #define SAOFU_LASTERROR() SaoFU::Error(__LINE__, __FILE__, GetLastError())
 #define SAOFU_TRY_INIT() HRESULT _hr = S_OK
-#define SAOFU_TRY(RES) if(FAILED(_hr = RES)) { throw SaoFU::Error(SAOFU_EXCEPTION(_hr)); }
+#define TRY_(RES) if(FAILED(_hr = RES)) { throw SaoFU::Error(SAOFU_EXCEPTION(_hr)); }
 
 
 #include <string>
