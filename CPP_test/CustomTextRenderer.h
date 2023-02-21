@@ -3,8 +3,6 @@
 #include <d2d1.h>
 #include <dwrite.h>
 
-
-
 class CustomTextRenderer : public IDWriteTextRenderer {
 protected:
     ULONG m_cRef;

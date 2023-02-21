@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <iostream>
 
 #define SafeRelease(x)              \
     if(x) {                         \
@@ -7,6 +8,9 @@
     } else {                        \
         MessageBoxA(0, 0, 0, 0);    \
     }
+
+#define AS_(T, ...)\
+    T([&]{ T m{}; __VA_ARGS__; return m; }())
 
 namespace SaoFU {
     struct Param {

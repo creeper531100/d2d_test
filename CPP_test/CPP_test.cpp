@@ -1,11 +1,19 @@
-﻿#include <d2d1_1.h>
-#include <string>
+﻿#include <Windows.h>
+#include <d2d1.h>
+#include <d2d1_1.h>
 #include <wincodec.h>
+#include <dwrite.h>
+#include <shlwapi.h>
+#include <string>
 
+#pragma comment(lib, "d2d1.lib")
+#pragma comment(lib, "dxguid.lib")
+#pragma comment(lib, "windowscodecs.lib")
+#pragma comment(lib, "dwrite.lib")
 #include "CustomTextRenderer.h"
+
 #include "define.h"
 #include "Error.h"
-
 
 class WICWrapper {
 private:
@@ -60,19 +68,19 @@ public:
 
     void CreateImageDecoder(ID2D1Bitmap** ppBitmap) {
 
-        TRY_(CoInitialize(nullptr));
+        HR_T(CoInitialize(nullptr));
 
-        TRY_
+        HR_T
         (CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pWICFactory)));
 
-        TRY_
+        HR_T
         (pWICFactory->CreateDecoderFromFilename(param->path.c_str(), NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &pWICDecoder));
 
-        TRY_(pWICDecoder->GetFrame(0, &pWICFrameDecoder));
+        HR_T(pWICDecoder->GetFrame(0, &pWICFrameDecoder));
 
-        TRY_(pWICFactory->CreateFormatConverter(&pWICConverter));
+        HR_T(pWICFactory->CreateFormatConverter(&pWICConverter));
 
-        TRY_(
+        HR_T(
         pWICConverter->Initialize(
             pWICFrameDecoder,
             GUID_WICPixelFormat32bppPBGRA,
@@ -82,7 +90,7 @@ public:
             WICBitmapPaletteTypeCustom
         ));
 
-        TRY_(pWICConverter->GetSize(&param->width, &param->height));
+        HR_T(pWICConverter->GetSize(&param->width, &param->height));
 
         if (param->max_width == -1) {
             param->max_width = param->width;
@@ -92,17 +100,17 @@ public:
             param->max_height = param->height;
         }
 
-        TRY_
+        HR_T
         (pWICFactory->CreateBitmap(param->width, param->height, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, &pWICBitmap));
 
-        TRY_(
+        HR_T(
         (*pD2DFactory)->CreateWicBitmapRenderTarget(//CreateWicBitmapRenderTarget
             pWICBitmap,
             D2D1::RenderTargetProperties(),
             ppRenderTarget
         ));
 
-        TRY_(
+        HR_T(
         (*ppRenderTarget)->CreateBitmapFromWicBitmap(
             pWICConverter,
             NULL,
@@ -113,19 +121,19 @@ public:
     }
 
     void SaveImage() {
-        TRY_(pWICFactory->CreateStream(&pStream));
-        TRY_(pStream->InitializeFromFilename(param->name.c_str(), GENERIC_WRITE));
+        HR_T(pWICFactory->CreateStream(&pStream));
+        HR_T(pStream->InitializeFromFilename(param->name.c_str(), GENERIC_WRITE));
 
-        TRY_(pWICFactory->CreateEncoder(param->container_format, nullptr, &pEncoder));
-        TRY_(pEncoder->Initialize(pStream, WICBitmapEncoderNoCache));
+        HR_T(pWICFactory->CreateEncoder(param->container_format, nullptr, &pEncoder));
+        HR_T(pEncoder->Initialize(pStream, WICBitmapEncoderNoCache));
 
-        TRY_(pEncoder->CreateNewFrame(&pFrameEncode, nullptr));
-        TRY_(pFrameEncode->Initialize(nullptr));
+        HR_T(pEncoder->CreateNewFrame(&pFrameEncode, nullptr));
+        HR_T(pFrameEncode->Initialize(nullptr));
 
-        TRY_(pFrameEncode->WriteSource(pWICBitmap, nullptr));
+        HR_T(pFrameEncode->WriteSource(pWICBitmap, nullptr));
 
-        TRY_(pFrameEncode->Commit());
-        TRY_(pEncoder->Commit());
+        HR_T(pFrameEncode->Commit());
+        HR_T(pEncoder->Commit());
 
         this->pEncoder = pEncoder;
         this->pFrameEncode = pFrameEncode;
@@ -137,17 +145,16 @@ int draw() {
     SaoFU::Param param;
     param.max_width = -1;
     param.max_height = -1;
-    param.font_size = 500;
-    param.text = L"洪老闆大蛋餅+1🪱";
+    param.font_size = 200;
+    param.text = L"洪老闆大眼睛";
     param.font_family = L"蘋方-繁";
-    param.pos_x = 0;
-    param.pos_y = 0;
+    
     param.blur_level = 50;
     param.stroke_width = 50;
-    param.path = L"C:\\Users\\Ussr\\OneDrive\\桌面\\圖片\\25_avatar_middle.jpg";
+    param.path = L"C:\\Users\\Ussr\\OneDrive\\桌面\\圖片\\329615121_6082902801772509_2484708322112285115_n.jpg";
     param.name = L"output.png";
     param.in_solid_color_brush = D2D1::ColorF(D2D1::ColorF::White);
-    param.out_solid_color_brush = D2D1::ColorF(0, 122, 204);
+    param.out_solid_color_brush = D2D1::ColorF(D2D1::ColorF::BurlyWood);
     param.container_format = GUID_ContainerFormatJpeg;
 
     ID2D1Factory* pD2DFactory = nullptr;
@@ -158,7 +165,11 @@ int draw() {
     ID2D1Bitmap* pBitmap = nullptr;
     d2d.CreateImageDecoder(&pBitmap);
 
+    param.pos_x = (param.width / 2) - (param.font_size * param.text.length()) / 2;
+    param.pos_y = (param.height / 2) - (param.font_size / 2);
+
     IDWriteFactory* pDWriteFactory = nullptr;
+    
     DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&pDWriteFactory));
 
     IDWriteTextFormat* pTextFormat = NULL;
@@ -212,14 +223,65 @@ int draw() {
     return 0;
 }
 
-int main() {
+#include <dxgi1_4.h>
+#include <d3d12.h>
 
+#pragma comment(lib, "D3D12.lib")
+#pragma comment(lib, "dxgi.lib")
+
+int main() {
     try {
         draw();
     }
     catch (SaoFU::Error& e) {
         MessageBoxA(0, e.what(), 0, MB_ICONERROR);
     }
-   
+    
     return 0;
 }
+
+
+/*
+try {
+    D3D12_COMMAND_LIST_TYPE d3d_list_type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+
+    IDXGIFactory4* p_factory = NULL;
+    HR_T(CreateDXGIFactory1(IID_PPV_ARGS(&p_factory)));
+
+    ID3D12Device* p_device = NULL;
+    HR_T(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&p_device)));
+
+    D3D12_COMMAND_QUEUE_DESC queue_desc = {};
+    {
+        queue_desc.Type = d3d_list_type;
+        queue_desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    }
+    ID3D12CommandQueue* p_queue = NULL;
+    HR_T(p_device->CreateCommandQueue(&queue_desc, IID_PPV_ARGS(&p_queue)));
+
+    ID3D12CommandAllocator* p_cmd_alloc = NULL;
+    HR_T
+    (p_device->CreateCommandAllocator(d3d_list_type, IID_PPV_ARGS(&p_cmd_alloc)));
+
+    ID3D12GraphicsCommandList* p_graphics_cmd_list = NULL;
+    HR_T
+    (p_device->CreateCommandList(0, d3d_list_type, p_cmd_alloc, NULL, IID_PPV_ARGS(&p_graphics_cmd_list)));
+
+    ID3D12CommandList* cmd_list [] = {p_graphics_cmd_list};
+    p_queue->ExecuteCommandLists(_countof(cmd_list), cmd_list);
+    //p_graphics_cmd_list->Reset(p_cmd_alloc, );
+
+    HR_T(p_cmd_alloc->Reset());
+    HR_T(p_graphics_cmd_list->Close());
+
+    SafeRelease(p_graphics_cmd_list);
+    SafeRelease(p_cmd_alloc);
+    SafeRelease(p_queue);
+    SafeRelease(p_device);
+    SafeRelease(p_factory);
+}
+catch (SaoFU::Error& e) {
+    MessageBoxA(0, e.what(), 0, MB_ICONERROR);
+}
+*/

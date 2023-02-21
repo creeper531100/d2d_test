@@ -1,4 +1,7 @@
-﻿#include <Windows.h>
+﻿#include "CustomTextRenderer.h"
+#include "define.h"
+
+#include <Windows.h>
 #include <d2d1.h>
 #include <d2d1_1.h>
 #include <wincodec.h>
@@ -10,8 +13,7 @@
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "windowscodecs.lib")
 #pragma comment(lib, "dwrite.lib")
-#include "CustomTextRenderer.h"
-#include "define.h"
+
 
 HRESULT CustomTextRenderer::DrawGlyphRun(
     void* clientDrawingContext, FLOAT baselineOriginX, FLOAT baselineOriginY,

@@ -33,3 +33,9 @@ char const* SaoFU::Error::what() const {
     LocalFree(p_msgbuf);
     return this->buffer.c_str();
 }
+
+HRESULT SaoFU::e_what(int line, const char* file, HRESULT hr) {
+    Error error_msg(line, file, hr);
+    MessageBoxA(0, error_msg.what(), 0, MB_ICONERROR);
+    return hr;
+}
