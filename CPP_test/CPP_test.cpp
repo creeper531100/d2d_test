@@ -146,72 +146,91 @@ int draw() {
     param.max_width = -1;
     param.max_height = -1;
     param.font_size = 200;
-    param.text = L"洪老闆大眼睛";
+    param.text = L"洪老闆生氣";
     param.font_family = L"蘋方-繁";
     
     param.blur_level = 50;
     param.stroke_width = 50;
-    param.path = L"C:\\Users\\Ussr\\OneDrive\\桌面\\圖片\\329615121_6082902801772509_2484708322112285115_n.jpg";
+    param.path = L"C:\\Users\\Ussr\\OneDrive\\桌面\\圖片\\IMG_2369.JPG";
     param.name = L"output.png";
-    param.in_solid_color_brush = D2D1::ColorF(D2D1::ColorF::White);
-    param.out_solid_color_brush = D2D1::ColorF(D2D1::ColorF::BurlyWood);
+    param.in_solid_color_brush = D2D1::ColorF(D2D1::ColorF::AliceBlue);
+    param.out_solid_color_brush = D2D1::ColorF(D2D1::ColorF::Gold);
     param.container_format = GUID_ContainerFormatJpeg;
 
     ID2D1Factory* pD2DFactory = nullptr;
     ID2D1RenderTarget* pRenderTarget = nullptr;
-
-    WICWrapper d2d(&pD2DFactory, &pRenderTarget, &param);
-
     ID2D1Bitmap* pBitmap = nullptr;
-    d2d.CreateImageDecoder(&pBitmap);
-
-    param.pos_x = (param.width / 2) - (param.font_size * param.text.length()) / 2;
-    param.pos_y = (param.height / 2) - (param.font_size / 2);
-
     IDWriteFactory* pDWriteFactory = nullptr;
-    
-    DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&pDWriteFactory));
+    IDWriteTextFormat* pTextFormat = nullptr;
+    IDWriteTextLayout* pTextLayout = nullptr;
+    ID2D1SolidColorBrush* pSolidColorBrush = nullptr;
+    ID2D1SolidColorBrush* pSolidColorBrushOut = nullptr;
 
-    IDWriteTextFormat* pTextFormat = NULL;
-    pDWriteFactory->CreateTextFormat(
-        param.font_family.c_str(),
-        NULL,
-        DWRITE_FONT_WEIGHT_NORMAL,
-        DWRITE_FONT_STYLE_NORMAL,
-        DWRITE_FONT_STRETCH_NORMAL,
-        param.font_size,
-        L"zh-TW",
-        &pTextFormat
-    );
+    IDWriteTextRenderer* pTextRender = nullptr;
 
-    IDWriteTextLayout* pTextLayout = NULL;
-    pDWriteFactory->CreateTextLayout(
-        param.text.c_str(),
-        param.text.length(),
-        pTextFormat,
-        param.max_width,
-        param.max_height,
-        &pTextLayout
-    );
+    SAOFU_TRY_INIT();
+    HR_TRY {
+        WICWrapper d2d(&pD2DFactory, &pRenderTarget, &param);
 
-    ID2D1SolidColorBrush* pSolidColorBrush = NULL;
-    ID2D1SolidColorBrush* pSolidColorBrushOut = NULL;
+        d2d.CreateImageDecoder(&pBitmap);
 
-    pRenderTarget->CreateSolidColorBrush(param.in_solid_color_brush, &pSolidColorBrush);
-    pRenderTarget->CreateSolidColorBrush(param.out_solid_color_brush, &pSolidColorBrushOut);
+        param.pos_x = (param.width / 2) - (param.font_size * param.text.length()) / 2;
+        param.pos_y = (param.height / 2) - (param.font_size / 2);
 
-    IDWriteTextRenderer* pTextRender = new CustomTextRenderer(pD2DFactory, pRenderTarget, pSolidColorBrush, pSolidColorBrushOut, param.stroke_width, param.blur_level);
+        HR_B
+        (DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&pDWriteFactory)));
 
-    {
-        pRenderTarget->BeginDraw();
-        pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-        pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::White, 0.0f));
-        pRenderTarget->DrawBitmap(pBitmap);
-        pTextLayout->Draw(NULL, pTextRender, param.pos_x, param.pos_y);
-        pRenderTarget->EndDraw();
+        HR_B(
+        pDWriteFactory->CreateTextFormat(
+            param.font_family.c_str(),
+            NULL,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            param.font_size,
+            L"zh-TW",
+            &pTextFormat
+        ));
+
+        HR_B(
+        pDWriteFactory->CreateTextLayout(
+            param.text.c_str(),
+            param.text.length(),
+            pTextFormat,
+            param.max_width,
+            param.max_height,
+            &pTextLayout
+        ));
+
+        HR_B(D3D11_ERROR_DEFERRED_CONTEXT_MAP_WITHOUT_INITIAL_DISCARD);
+
+        HR_B
+        (pRenderTarget->CreateSolidColorBrush(param.in_solid_color_brush, &pSolidColorBrush));
+        HR_B
+        (pRenderTarget->CreateSolidColorBrush(param.out_solid_color_brush, &pSolidColorBrushOut));
+
+        pTextRender = new CustomTextRenderer(
+            pD2DFactory,
+            pRenderTarget,
+            pSolidColorBrush,
+            pSolidColorBrushOut,
+            param.stroke_width,
+            param.blur_level
+        );
+        
+        {
+            pRenderTarget->BeginDraw();
+            pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
+            pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::White, 0.0f));
+            pRenderTarget->DrawBitmap(pBitmap);
+            pTextLayout->Draw(NULL, pTextRender, param.pos_x, param.pos_y);
+            pRenderTarget->EndDraw();
+        }
+
+        d2d.SaveImage();
     }
 
-    d2d.SaveImage();
+HR_FINALLY;
 
     SafeRelease(pTextFormat);
     SafeRelease(pDWriteFactory);

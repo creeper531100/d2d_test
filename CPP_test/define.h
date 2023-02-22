@@ -5,8 +5,6 @@
     if(x) {                         \
         (x)->Release();             \
         (x) = NULL;                 \
-    } else {                        \
-        MessageBoxA(0, 0, 0, 0);    \
     }
 
 #define AS_(T, ...)\

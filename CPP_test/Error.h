@@ -32,13 +32,8 @@
         break; \
     }
 
-//Goto Result
-#define HR_G(LABEL, RES)                                 \
-    if (FAILED(_hr = RES)) { \
-        SaoFU::e_what(__LINE__, __FILE__, _hr);          \
-        goto _SaoFU_Label_##LABEL; \
-    }
-
+#define HR_TRY do
+#define HR_FINALLY while (0)
 
 #include <string>
 typedef long HRESULT;
