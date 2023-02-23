@@ -202,8 +202,6 @@ int draw() {
             &pTextLayout
         ));
 
-        HR_B(D3D11_ERROR_DEFERRED_CONTEXT_MAP_WITHOUT_INITIAL_DISCARD);
-
         HR_B
         (pRenderTarget->CreateSolidColorBrush(param.in_solid_color_brush, &pSolidColorBrush));
         HR_B
